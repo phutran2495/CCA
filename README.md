@@ -20,7 +20,7 @@ docker-compose up --build
 This will start:
 - PostgreSQL (port 5432)
 - FastAPI backend (port 8000)
-- (Optional) Frontend (port 5173)
+- Frontend (port 5173)
 
 ### 3. Ingest CCA data
 ```bash
@@ -64,6 +64,23 @@ pytest
 - Data entry errors (malformed arrays, typos) are handled best-effort in ingestion, but front-end validation is recommended.
 - The ingestion script attempts to robustly parse inconsistent CSV formats, but perfect normalization depends on source data quality.
 
+---
+
+## Geomapping Technique
+
+The backend leverages the `uscities.csv` dataset to perform city/ZIP geomapping. This file contains mappings between city names, state abbreviations, and all ZIP codes associated with each city. At API startup, the backend loads this file and builds two in-memory mappings:
+
+- **City+State → ZIP codes:** Allows the backend to look up all ZIP codes for a given city and state.
+- **ZIP code → City/State:** Allows the backend to resolve a ZIP code to its corresponding city and state.
+
+**How it's used:**
+- If a user provides only a ZIP code, the backend looks up the city/state for that ZIP and uses it for CCA eligibility lookup.
+- If a user provides only a city (and state), the backend looks up all ZIP codes for that city/state and uses them for matching.
+- If both are provided, both are used for the most accurate lookup.
+- Fuzzy matching is also applied to city names to tolerate typos.
+
+This approach enables robust, typo-tolerant address resolution without requiring a full geocoding service, and supports both city-based and ZIP-based CCA eligibility queries.
+
 ## Data Entry Improvements
 - Use dropdowns/autocomplete for counties, cities, and zips in the labeling interface.
 - Validate array fields and enforce consistent formatting before submission.
@@ -94,5 +111,3 @@ pytest
 
 ## References
 - [Google Sheet: cca_coverage](https://docs.google.com/spreadsheets/d/10IwOR_V55J8wK0dIllh2a4_Y9CjF0lGyZfqgQb1mRSU/edit?gid=0#gid=0)
-- [USPS ZIP Code Lookup](https://postalpro.usps.com/ZIPLocaleDetail)
-- [Geocorr 2022](https://mcdc.missouri.edu/applications/geocorr2022.html) 

@@ -8,15 +8,17 @@ from sqlalchemy.pool import StaticPool
 
 client = TestClient(app)
 
+
 @pytest.fixture(scope="session")
 def db_engine():
     engine = create_engine(
-        'sqlite:///:memory:',
+        "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
-        poolclass=StaticPool
+        poolclass=StaticPool,
     )
     Base.metadata.create_all(engine)
     return engine
+
 
 @pytest.fixture(autouse=True)
 def override_get_db(db_engine):
@@ -25,12 +27,24 @@ def override_get_db(db_engine):
     session.query(ZipIncluded).delete()
     session.query(CityIncluded).delete()
     session.query(CCA).delete()
-    cca = CCA(cca_name="Test CCA", is_cca=True, is_incumbent_utility=False, state="CA", signup_link="http://test.com")
+    cca = CCA(
+        cca_name="Test CCA",
+        is_cca=True,
+        is_incumbent_utility=False,
+        state="CA",
+        signup_link="http://test.com",
+    )
     session.add(cca)
     session.flush()
     session.add(ZipIncluded(cca_id=cca.id, zipcode="95032"))
     session.add(CityIncluded(cca_id=cca.id, city="San Rafael"))
-    cca2 = CCA(cca_name="No Link CCA", is_cca=True, is_incumbent_utility=False, state="CA", signup_link=None)
+    cca2 = CCA(
+        cca_name="No Link CCA",
+        is_cca=True,
+        is_incumbent_utility=False,
+        state="CA",
+        signup_link=None,
+    )
     session.add(cca2)
     session.flush()
     session.add(CityIncluded(cca_id=cca2.id, city="Santa Cruz"))
@@ -48,12 +62,14 @@ def override_get_db(db_engine):
     yield
     app.dependency_overrides.clear()
 
+
 def test_zip_match():
     response = client.post("/eligible_ccas", json={"address": "95032"})
     assert response.status_code == 200
     result = response.json()
     assert len(result) > 0
     assert any("Test CCA" in cca["cca_name"] for cca in result)
+
 
 def test_city_typo_match():
     response = client.post("/eligible_ccas", json={"address": "San Rafel, CA"})
@@ -62,9 +78,50 @@ def test_city_typo_match():
     assert len(result) > 0
     assert any("Test CCA" in cca["cca_name"] for cca in result)
 
+
 def test_missing_signup_link():
     response = client.post("/eligible_ccas", json={"address": "Santa Cruz, CA"})
     assert response.status_code == 200
     result = response.json()
     assert len(result) > 0
-    assert any(cca["cca_name"] == "No Link CCA" for cca in result) 
+    assert any(cca["cca_name"] == "No Link CCA" for cca in result)
+
+
+def test_only_zip_provided():
+    # 95032 is mapped to San Jose, CA in uscities.csv
+    response = client.post("/eligible_ccas", json={"address": "95032"})
+    assert response.status_code == 200
+    result = response.json()
+    assert isinstance(result, list)
+    # Should match Test CCA (from fixture)
+    assert any("Test CCA" in cca["cca_name"] for cca in result)
+
+
+def test_only_city_provided():
+    response = client.post("/eligible_ccas", json={"address": "San Rafael, CA"})
+    assert response.status_code == 200
+    result = response.json()
+    assert isinstance(result, list)
+    assert any("Test CCA" in cca["cca_name"] for cca in result)
+
+
+def test_city_and_zip_provided():
+    response = client.post("/eligible_ccas", json={"address": "San Rafael, CA 95032"})
+    assert response.status_code == 200
+    result = response.json()
+    assert isinstance(result, list)
+    assert any("Test CCA" in cca["cca_name"] for cca in result)
+
+
+def test_zip_not_in_mapping():
+    response = client.post("/eligible_ccas", json={"address": "99999"})
+    assert response.status_code == 200
+    result = response.json()
+    assert result == []
+
+
+def test_city_not_in_mapping():
+    response = client.post("/eligible_ccas", json={"address": "Nonexistent City, CA"})
+    assert response.status_code == 200
+    result = response.json()
+    assert result == []

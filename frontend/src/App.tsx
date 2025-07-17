@@ -38,7 +38,7 @@ function App() {
     <div style={{ minHeight: '100vh', width: '100vw', background: 'linear-gradient(120deg, #f8fafc 0%, #e0e7ef 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 4px 24px rgba(0,0,0,0.08)', padding: '2.5rem 2rem', width: '100%', maxWidth: 420 }}>
         <h1 style={{ textAlign: 'center', fontWeight: 700, fontSize: '2rem', marginBottom: '1.5rem', color: '#1e293b', letterSpacing: '-1px' }}>CCA Finder</h1>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
           <input
             type="text"
             value={address}
@@ -55,6 +55,19 @@ function App() {
             {loading ? 'Searching...' : 'Search'}
           </button>
         </form>
+        <div style={{ marginBottom: 18, textAlign: 'center', color: '#64748b', fontSize: 14 }}>
+          <div style={{ marginBottom: 4 }}>Try an example:</div>
+          {["95032", "San Rafael, CA", "San Rafael, CA 94901", "San Rafel, CA", "99999", "Nonexistent City, CA"].map((ex, i) => (
+            <button
+              key={ex}
+              type="button"
+              style={{ margin: '0 4px 6px 0', padding: '0.4em 0.9em', borderRadius: 6, border: '1px solid #cbd5e1', background: '#f1f5f9', color: '#2563eb', fontWeight: 500, fontSize: 13, cursor: 'pointer', transition: 'background 0.2s' }}
+              onClick={() => setAddress(ex)}
+            >
+              {ex}
+            </button>
+          ))}
+        </div>
         {error && <div style={{ color: '#dc2626', marginBottom: 16, textAlign: 'center' }}>{error}</div>}
         {results.length > 0 ? (
           <div>
