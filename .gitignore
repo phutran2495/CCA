@@ -1,0 +1,27 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+.env.*
+
+# pytest
+.pytest_cache/
+
+# VSCode
+.vscode/
+
+# macOS
+.DS_Store
+
+# Node
+node_modules/
+
+# Logs
+*.log
+
+# Docker
+**/.env 
